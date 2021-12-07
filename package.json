@@ -16,5 +16,8 @@
   "bugs": {
     "url": "https://github.com/moh-diab/tinyapp/issues"
   },
-  "homepage": "https://github.com/moh-diab/tinyapp#readme"
+  "homepage": "https://github.com/moh-diab/tinyapp#readme",
+  "dependencies": {
+    "express": "^4.17.1"
+  }
 }
