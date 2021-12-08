@@ -27,6 +27,12 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+app.post("/urls/:shortURL", (req, res) => {
+  let editShort = req.params.shortURL;
+  urlDatabase[editShort] = req.body.editted;
+  console.log(urlDatabase)
+  res.redirect("/urls/");
+});
 
 
 app.get("/", (req, res) => {
