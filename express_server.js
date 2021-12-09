@@ -23,7 +23,14 @@ const users = {
   },
 }
 
-
+const findUserByEmail = email => {
+  for (let user in users) {
+    if (users[user].email === email) {
+      return user;
+    }
+  }
+  return false;
+}
 ////// ROUTING //////////////
 app.get("/urls", (req, res) => {
   const userID = req.cookies["user_id"];
@@ -74,22 +81,19 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
+app.post("/urls/:shortURL/delete", (req, res) => {
+  const shortURL = req.params.shortURL
+  delete urlDatabase[shortURL];
+  res.redirect("/urls");
+})
 
 
 app.post("/urls/:shortURL", (req, res) => {
   let editShort = req.params.shortURL;
   urlDatabase[editShort] = req.body.editted;
-  console.log(urlDatabase)
   res.redirect("/urls/");
 });
 
-
-app.post("/urls/:shortURL/delete", (req, res) => {
-  const shortURL = req.params.shortURL
-  delete urlDatabase[shortURL];
-  console.log(urlDatabase);
-  res.redirect("/urls");
-})
 
 app.post("/login", (req,res) => {
   res.cookie("username",req.body.username);
@@ -108,6 +112,13 @@ app.get("/register", (req, res) => {
 app.post("/register", (req,res) => {
   const email = req.body.email;
   const password = req.body.password;
+  if (((email.length === 0) && (password.length === 0))) {
+    res.status(400).send();
+  } else if (findUserByEmail(email)) {
+    console.log("Email already exists ")
+    res.status(400).send();
+  }
+
   const id = generateRandomString();
   users[id] = {
     id,
