@@ -31,6 +31,7 @@ const findUserByEmail = email => {
   }
   return false;
 }
+
 ////// ROUTING //////////////
 app.get("/urls", (req, res) => {
   const userID = req.cookies["user_id"];
@@ -95,9 +96,8 @@ app.post("/urls/:shortURL", (req, res) => {
 });
 
 
-app.post("/login", (req,res) => {
-  res.cookie("username",req.body.username);
-  res.redirect("/urls");
+app.get("/login", (req,res) => {
+  res.render("login");
 })
 
 app.post("/logout", (req,res) => {
