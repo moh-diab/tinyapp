@@ -2,7 +2,8 @@ const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
 const bodyParser = require("body-parser");
-const cookieParser = require('cookie-parser')
+const cookieParser = require('cookie-parser');
+const bcrypt = require('bcryptjs');
 
 app.set("view engine", "ejs");
 app.use(bodyParser.urlencoded({extended: true}));
@@ -29,6 +30,7 @@ const users = {
   },
 }
 
+//return userID if it finds a user corresponds to the email
 const findUserByEmail = email => {
   for (let user in users) {
     if (users[user].email === email) {
@@ -49,7 +51,7 @@ const urlsForUser = id => {
   return result;
 }
 
-////// ROUTING //////////////
+////// ROUTES //////////////
 app.get("/urls", (req, res) => {
   const userId = req.cookies.user_id;
   let templateVars = { urls: urlsForUser(userId), user: users[userId] };
@@ -59,6 +61,7 @@ app.get("/urls", (req, res) => {
 app.get("/suggestToRegister", (req, res) => {
   res.render("suggestToRegister");
 })
+
 
 app.get("/urls/new", (req, res) => {
   if (req.cookies.user_id) {
@@ -81,11 +84,12 @@ app.get("/urls/:shortURL", (req, res) => {
 
 
 
-
+// homepage
 app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
+// JSON Page to show urlDatabase
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
@@ -95,7 +99,7 @@ app.get("/hello", (req, res) => {
 });
 
 
-
+// Redirect to longURL
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL].longURL;
   res.redirect(longURL);
@@ -103,6 +107,7 @@ app.get("/u/:shortURL", (req, res) => {
 
 /////////////////////////////////////////////
 
+// urls page (edit) handler
 app.post("/urls", (req, res) => {
   const longURL = req.body.longURL;
   const shortURL = generateRandomString();
@@ -113,6 +118,7 @@ app.post("/urls", (req, res) => {
   res.redirect(`/urls/${shortURL}`);
 });
 
+// urls (delete) handler
 app.post("/urls/:shortURL/delete", (req, res) => {
   if (req.cookies.user_id) {
     const shortURL = req.params.shortURL;
@@ -123,7 +129,7 @@ app.post("/urls/:shortURL/delete", (req, res) => {
   }
 })
 
-
+// :shortURL edit handler
 app.post("/urls/:shortURL", (req, res) => {
   if (req.cookies.user_id) {
     let editShort = req.params.shortURL;
@@ -136,11 +142,12 @@ app.post("/urls/:shortURL", (req, res) => {
 
 /////////////////////////////////////////
 
-
+// login
 app.get("/login", (req,res) => {
   res.render("login");
 })
 
+// login submit handler
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
@@ -148,7 +155,7 @@ app.post("/login", (req, res) => {
   if (!userID) {
     res.status(403).send("User does not exists!");
   } else {
-    if (users[userID].password === password) {
+    if (bcrypt.compareSync(password, users[userID].password)) {
       res.cookie("user_id", userID);
       res.redirect("/urls");
     } else {
@@ -158,7 +165,7 @@ app.post("/login", (req, res) => {
 })
 
 
-
+// logout page
 app.post("/logout", (req,res) => {
   res.clearCookie("user_id");
   res.redirect("/urls");
@@ -166,13 +173,16 @@ app.post("/logout", (req,res) => {
 
 //////////////////////////////////
 
+// register page
 app.get("/register", (req, res) => {
   res.render("register");
 })
 
+// register submit handler
 app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
+  const hashedPassword = bcrypt.hashSync(password, 10);
   if (((email.length === 0) && (password.length === 0))) {
     res.status(400).send("Invalid Email or Password!");
   } else if (findUserByEmail(email)) {
@@ -183,11 +193,12 @@ app.post("/register", (req, res) => {
   users[id] = {
     id,
     email,
-    password,
+    password : hashedPassword,
   }
   res.cookie("user_id", id);
   res.redirect("/urls");
 })
+
 
 ///////////////////////
 function generateRandomString() {
@@ -196,5 +207,5 @@ function generateRandomString() {
 
 
 app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
+  console.log(`Server is listening on port ${PORT}!`);
 });
