@@ -38,15 +38,31 @@ const findUserByEmail = email => {
   return false;
 }
 
+//returns the URLs where the userID is equal to the id of the currently logged-in user.
+const urlsForUser = id => {
+  const result = {};
+  for (url in urlDatabase) {
+    if (urlDatabase[url].userID === id) {
+      result[url] = urlDatabase[url];
+    }
+  }
+  return result;
+}
+
 ////// ROUTING //////////////
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase, user: users[req.cookies.user_id]};
+  const userId = req.cookies.user_id;
+  let templateVars = { urls: urlsForUser(userId), user: users[userId] };
   res.render("urls_index", templateVars);
 });
 
+app.get("/suggestToRegister", (req, res) => {
+  res.render("suggestToRegister");
+})
+
 app.get("/urls/new", (req, res) => {
   if (req.cookies.user_id) {
-    let templateVars = {user: users[req.cookies.user_id]};
+    let templateVars = { user: users[req.cookies.user_id] };
     res.render("urls_new", templateVars);
   } else {
     res.redirect("/login");
@@ -54,9 +70,13 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:shortURL", (req, res) => {
-  const shortURL = req.params.shortURL;
-  let templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL].longURL, user: users[req.cookies.user_id]};
-  res.render("urls_show", templateVars)
+  if (req.cookies.user_id) {
+    const shortURL = req.params.shortURL;
+    let templateVars = { shortURL: shortURL, longURL: urlDatabase[shortURL].longURL, user: users[req.cookies.user_id] };
+    res.render("urls_show", templateVars)
+  } else {
+    res.redirect("/urls");
+  }
 })
 
 
@@ -77,9 +97,7 @@ app.get("/hello", (req, res) => {
 
 
 app.get("/u/:shortURL", (req, res) => {
-  console.log("shortURL is: \n" ,req.params.shortURL);
   const longURL = urlDatabase[req.params.shortURL].longURL;
-  console.log(longURL);
   res.redirect(longURL);
 })
 
@@ -96,16 +114,24 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/urls/:shortURL/delete", (req, res) => {
-  const shortURL = req.params.shortURL;
-  delete urlDatabase[shortURL];
-  res.redirect("/urls");
+  if (req.cookies.user_id) {
+    const shortURL = req.params.shortURL;
+    delete urlDatabase[shortURL];
+    res.redirect("/urls");
+  } else {
+    res.redirect("/urls")
+  }
 })
 
 
 app.post("/urls/:shortURL", (req, res) => {
-  let editShort = req.params.shortURL;
-  urlDatabase[editShort] = req.body.editted;
-  res.redirect("/urls/");
+  if (req.cookies.user_id) {
+    let editShort = req.params.shortURL;
+    urlDatabase[editShort].longURL = req.body.editted;
+    res.redirect("/urls");
+  } else {
+    res.redirect("/urls");
+  }
 });
 
 /////////////////////////////////////////
@@ -120,13 +146,13 @@ app.post("/login", (req, res) => {
   const password = req.body.password;
   const userID = findUserByEmail(email);
   if (!userID) {
-    res.status(403).send("This user is not existing.");
+    res.status(403).send("User does not exists!");
   } else {
     if (users[userID].password === password) {
-      res.cookie("user_id",userID);
+      res.cookie("user_id", userID);
       res.redirect("/urls");
     } else {
-      res.status(403).send("Incorrect password.");
+      res.status(403).send("Incorrect password!");
     }
   }
 })
@@ -148,11 +174,11 @@ app.post("/register", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   if (((email.length === 0) && (password.length === 0))) {
-    res.status(400).send("Invalid Email or Password.");
+    res.status(400).send("Invalid Email or Password!");
   } else if (findUserByEmail(email)) {
-    res.status(400).send("This Email is already existing.");
+    res.status(400).send("Email already exists!");
   }
-
+  
   const id = generateRandomString();
   users[id] = {
     id,
