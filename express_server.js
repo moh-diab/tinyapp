@@ -30,7 +30,7 @@ const users = {
   "userRandomID": {
     id: "userRandomID", 
     email: "user@example.com", 
-    password: "password-example"
+    password: "purple-monkey-dinosaur"
   },
 }
 
@@ -188,7 +188,7 @@ app.post("/register", (req, res) => {
   } else if (helpers.getUserByEmail(email,users)) {
     res.status(400).send("Email already exists!");
   }
-  
+
   const id = generateRandomString();
   users[id] = {
     id,
